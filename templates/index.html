@@ -66,6 +66,27 @@
 
       <!-- Main Controls -->
       <div class="main-grid">
+        <!-- Control Panel -->
+        <div class="glass-card control-panel">
+          <div class="card-header">
+            <h2><i class="fa-solid fa-cogs"></i> System Controls</h2>
+          </div>
+          <div class="control-actions" style="display: flex; gap: 10px; flex-wrap: wrap; padding: 1rem;">
+             <button class="btn btn-warning" onclick="controlBot('restart')" title="Restart the bot process">
+               <i class="fa-solid fa-rotate"></i> Restart
+             </button>
+             <button class="btn btn-danger" onclick="controlBot('toggle_bot')" title="Turn bot On/Off">
+               <i class="fa-solid fa-power-off"></i> Power
+             </button>
+             <button class="btn btn-secondary" onclick="controlBot('clear_logs')" title="Clear log file">
+               <i class="fa-solid fa-eraser"></i> Clear Logs
+             </button>
+             <button class="btn btn-info" onclick="controlBot('toggle_access')" title="Toggle Private/Public Mode">
+               <i class="fa-solid fa-lock"></i> Toggle Access
+             </button>
+          </div>
+        </div>
+
         <!-- Broadcast Panel -->
         <div class="glass-card">
           <div class="card-header">
@@ -187,6 +208,7 @@
               <li><code>/rps</code> <span class="command-desc">Play Rock-Paper-Scissors</span></li>
               <li><code>/truth</code> <span class="command-desc">Get a Truth question</span></li>
               <li><code>/dare</code> <span class="command-desc">Get a Dare challenge</span></li>
+              <li><code>/trivia</code> <span class="command-desc">Play Trivia Game</span></li>
             </ul>
           </div>
 
@@ -395,16 +417,32 @@
 
       async function trackUsers() {
         if(!confirm("Track all users? This will update metadata without notifications.")) return;
-        logToConsole("Starting user tracking sequence...", "info");
+        controlBot('track_users');
+      }
+
+      async function controlBot(action) {
+        if(!confirm(`Are you sure you want to perform: ${action}?`)) return;
+        logToConsole(`Executing system command: ${action}...`, "warn");
+        
         try {
           const res = await fetch("/api/control", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ action: "track_users" }),
+            body: JSON.stringify({ action: action }),
           });
-          alert("Tracking started in background. Check logs for progress.");
+          const result = await res.json();
+          
+          if(result.success) {
+            logToConsole(`Action '${action}' successful.`, "success");
+            alert(`Action '${action}' executed successfully.`);
+            if(action === 'restart') setTimeout(() => window.location.reload(), 3000);
+            fetchData();
+          } else {
+            logToConsole(`Action failed: ${result.error}`, "error");
+            alert("Error: " + result.error);
+          }
         } catch (e) {
-          logToConsole("Error starting tracking", "error");
+          logToConsole(`System Error: ${e}`, "error");
         }
       }
 
