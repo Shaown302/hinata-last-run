@@ -250,6 +250,32 @@
           </div>
         </div>
       </div>
+      
+      <!-- Complete User Database Section -->
+      <div class="glass-card full-width-card" style="margin-top: 2rem;">
+        <div class="card-header">
+          <h2><i class="fa-solid fa-database"></i> Master User Database</h2>
+          <div class="search-box">
+             <i class="fa-solid fa-magnifying-glass"></i>
+             <input type="text" id="user-search" placeholder="Search by ID or Username..." onkeyup="filterUsers()">
+          </div>
+        </div>
+        <div class="table-wrapper">
+          <table id="master-users-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Full Name</th>
+                <th>Username</th>
+                <th>Joined Date</th>
+              </tr>
+            </thead>
+            <tbody id="master-users-body">
+              <tr><td colspan="4" class="loading">Fetching records...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
 
       <footer>
         <p>&copy; 2026 Hinata Bot System. All rights reserved.</p>
@@ -270,6 +296,7 @@
           renderUsers(data.users);
           renderGroups(data.groups);
           renderBroadcasts(data.broadcasts);
+          renderMasterUsers(data.users);
 
         } catch (e) {
           console.error("Fetch Error:", e);
@@ -282,7 +309,7 @@
         if (!users || users.length === 0) {
           uBody.innerHTML = "<tr><td colspan='4' class='empty'>No users found</td></tr>";
         } else {
-           uBody.innerHTML = users.slice(0, 50).map(u => `
+           uBody.innerHTML = users.slice(0, 10).map(u => `
              <tr>
                <td><code>${u.id}</code></td>
                <td>${u.full_name || u.name || 'Unknown'}</td>
@@ -290,6 +317,41 @@
                <td>${u.joined_at || 'N/A'}</td>
              </tr>
            `).join("");
+        }
+      }
+
+      function renderMasterUsers(users) {
+        const mBody = document.getElementById("master-users-body");
+        if (!users || users.length === 0) {
+          mBody.innerHTML = "<tr><td colspan='4' class='empty'>No users found</td></tr>";
+        } else {
+           mBody.innerHTML = users.map(u => `
+             <tr>
+               <td><code>${u.id}</code></td>
+               <td>${u.full_name || u.name || 'Unknown'}</td>
+               <td>${u.username ? '@'+u.username : 'N/A'}</td>
+               <td>${u.joined_at || 'N/A'}</td>
+             </tr>
+           `).join("");
+        }
+      }
+
+      function filterUsers() {
+        const input = document.getElementById("user-search");
+        const filter = input.value.toLowerCase();
+        const table = document.getElementById("master-users-table");
+        const tr = table.getElementsByTagName("tr");
+
+        for (let i = 1; i < tr.length; i++) {
+          let visible = false;
+          const tds = tr[i].getElementsByTagName("td");
+          for (let j = 0; j < tds.length; j++) {
+            if (tds[j] && tds[j].textContent.toLowerCase().indexOf(filter) > -1) {
+              visible = true;
+              break;
+            }
+          }
+          tr[i].style.display = visible ? "" : "none";
         }
       }
 
