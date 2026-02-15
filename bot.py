@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """
 Hinata Bot - Final Premium v2.1
 - Optimized for Render deployment
@@ -354,9 +354,9 @@ async def cmd_game_guess(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def cmd_game_riddle(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await check_permission(update, context): return
-    status = await update.effective_message.reply_text(" <b>Creating a riddle for you...</b>", parse_mode="HTML")
+    status = await update.effective_message.reply_text(" <b>Creating a unique riddle for you...</b>", parse_mode="HTML")
     
-    prompt = f"Generate a unique, rare, and fun riddle for a game. Do not repeat common riddles. (Random Seed: {random.randint(1, 1000000)}) Do NOT include credits or extra text. Return strictly in this format: RIDDLE: [the riddle text] ANSWER: [the one word answer]"
+    prompt = f"Generate a unique, rare, and fun riddle for a game. Random seed: {random.randint(1, 1000000)}. Return strictly in this format: RIDDLE: [text] ANSWER: [one word answer]"
     async with httpx.AsyncClient() as client:
         res = await fetch_chatgpt(client, prompt)
     
@@ -364,22 +364,46 @@ async def cmd_game_riddle(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if "RIDDLE:" in res and "ANSWER:" in res:
             parts = res.split("ANSWER:")
             riddle = parts[0].replace("RIDDLE:", "").strip()
-            answer = parts[1].strip().split()[0].replace(".", "").replace(",", "")
+            answer = parts[1].strip().split()[0].lower().replace(".", "").replace(",", "")
             
             context.user_data["riddle_answer"] = answer
             context.user_data[AWAIT_RIDDLE] = True
             
+            kb = [[InlineKeyboardButton(" Give Up / Next", callback_data="btn_riddle")]]
             await status.edit_text(
                 f" <b>AI Riddle Challenge</b>\n\n"
                 f"<i>{riddle}</i>\n\n"
                 f"<b>What am I?</b> Send your answer below:",
                 parse_mode="HTML",
-                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton(" Give Up", callback_data="btn_back")]])
+                reply_markup=InlineKeyboardMarkup(kb)
             )
         else:
-            await status.edit_text("❌ Failed to generate riddle. Try again!")
-    except:
-        await status.edit_text("⚙️ System error generating riddle.")
+             await status.edit_text("❌ Failed to generate riddle. Please try again.")
+    except Exception as e:
+        logger.error(f"Riddle Gen Error: {e}")
+        await status.edit_text("⚙️ System error. Try again later.")
+
+async def cmd_game_roast(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not await check_permission(update, context): return
+    msg = await update.effective_message.reply_text("🔥 <b>Preparing a savage roast...</b>", parse_mode="HTML")
+    prompt = "Give me an absolutely savage, ruthless, and funny roast. No mercy. Keep it short and impactful. One paragraph only."
+    async with httpx.AsyncClient() as client:
+        reply = await fetch_chatgpt(client, prompt)
+    
+    kb = [[InlineKeyboardButton(" Another Roast!", callback_data="btn_roast"),
+           InlineKeyboardButton(" Back", callback_data="btn_back")]]
+    await msg.edit_text(f"🔥 <b>The Roast:</b>\n\n{html.escape(reply)}", parse_mode="HTML", reply_markup=InlineKeyboardMarkup(kb))
+
+async def cmd_game_joke(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not await check_permission(update, context): return
+    msg = await update.effective_message.reply_text("😂 <b>Thinking of a joke...</b>", parse_mode="HTML")
+    prompt = "Tell me a really funny, hilarious joke. Can be dark humor or observational. Short and witty. No restrictions."
+    async with httpx.AsyncClient() as client:
+        reply = await fetch_chatgpt(client, prompt)
+    
+    kb = [[InlineKeyboardButton(" Another Joke!", callback_data="btn_joke"),
+           InlineKeyboardButton(" Back", callback_data="btn_back")]]
+    await msg.edit_text(f"😂 <b>Joke:</b>\n\n{html.escape(reply)}", parse_mode="HTML", reply_markup=InlineKeyboardMarkup(kb))
 
 async def cmd_shorten(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await check_permission(update, context, silent=True): return
@@ -819,6 +843,8 @@ def get_main_menu(menu_type="home", user_id=None):
              InlineKeyboardButton("🎲 Dice Roll", callback_data="btn_dice")],
             [InlineKeyboardButton("🧩 Riddle", callback_data="btn_riddle"),
              InlineKeyboardButton("🔢 Guess Num", callback_data="btn_guess")],
+            [InlineKeyboardButton("🔥 Roast", callback_data="btn_roast"),
+             InlineKeyboardButton("😂 Joke", callback_data="btn_joke")],
             [InlineKeyboardButton("🔙 Back", callback_data="menu_home")]
         ]
         
@@ -1151,16 +1177,13 @@ async def cmd_qrread(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def cmd_truthordare(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await check_permission(update, context): return
     
-    # Categories available
+    # Simplified Categories
     kb = [
-        [InlineKeyboardButton("😂 Truth (Funny)", callback_data="tod_truth_funny"),
-         InlineKeyboardButton("😬 Truth (Hard)", callback_data="tod_truth_hard")],
-        [InlineKeyboardButton("🤪 Dare (Funny)", callback_data="tod_dare_funny"),
-         InlineKeyboardButton("🔥 Dare (Hard)", callback_data="tod_dare_hard")],
-        [InlineKeyboardButton("🎲 Random", callback_data="tod_random")],
+        [InlineKeyboardButton("😂 Truth", callback_data="tod_truth"),
+         InlineKeyboardButton("🤪 Dare", callback_data="tod_dare")],
         [InlineKeyboardButton("🔙 Back", callback_data="btn_back")]
     ]
-    text = "🎲 <b>Truth or Dare?</b>\n\n👇 Select a category/difficulty below:"
+    text = "🎲 <b>Truth or Dare?</b>\n\n👇 Select one below:"
     if update.callback_query:
         await safe_edit(update.callback_query, text, reply_markup=InlineKeyboardMarkup(kb))
     else:
@@ -1957,6 +1980,10 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await cmd_game_riddle(update, context)
     elif data == "btn_guess":
         await cmd_game_guess(update, context)
+    elif data == "btn_roast":
+        await cmd_game_roast(update, context)
+    elif data == "btn_joke":
+        await cmd_game_joke(update, context)
         
     elif data == "btn_admin" or data == "menu_owner": # Owner panel
         if not is_owner(query.from_user.id): return
@@ -2024,13 +2051,10 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def do_tod_fetch(update: Update, _context: ContextTypes.DEFAULT_TYPE, mode: str):
     query = update.callback_query
     
-    # Parse mode (e.g. tod_truth_funny -> category "truth funny")
-    parts = mode.split("_") # ['truth', 'funny']
-    category = " ".join(parts)
+    # mode is just 'truth' or 'dare' now
+    await safe_edit(query, f" <b>Generating {mode.title()}...</b>")
     
-    await safe_edit(query, f" <b>Rolling for {category.title()}...</b>")
-    
-    prompt = f"Generate a {category} question/task for a Truth or Dare game. Make it engaging. Return only the question text."
+    prompt = f"Generate a creative and engaging {mode} for a Truth or Dare game. Return only the {mode} text."
     async with httpx.AsyncClient() as client:
         reply = await fetch_chatgpt(client, prompt)
     
