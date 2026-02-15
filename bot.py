@@ -356,7 +356,8 @@ async def cmd_game_riddle(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await check_permission(update, context): return
     status = await update.effective_message.reply_text(" <b>Creating a unique riddle for you...</b>", parse_mode="HTML")
     
-    prompt = f"Generate a unique, rare, and fun riddle for a game. Random seed: {random.randint(1, 1000000)}. Return strictly in this format: RIDDLE: [text] ANSWER: [one word answer]"
+    difficulty = random.choice(["easy", "medium", "hard", "tricky", "funny", "impossible"])
+    prompt = f"Generate a unique, creative {difficulty} riddle. Random seed: {random.randint(1, 1000000)}. Return strictly in this format: RIDDLE: [text] ANSWER: [one word answer]"
     async with httpx.AsyncClient() as client:
         res = await fetch_chatgpt(client, prompt)
     
@@ -404,6 +405,41 @@ async def cmd_game_joke(update: Update, context: ContextTypes.DEFAULT_TYPE):
     kb = [[InlineKeyboardButton(" Another Joke!", callback_data="btn_joke"),
            InlineKeyboardButton(" Back", callback_data="btn_back")]]
     await msg.edit_text(f"😂 <b>Joke:</b>\n\n{html.escape(reply)}", parse_mode="HTML", reply_markup=InlineKeyboardMarkup(kb))
+
+
+async def cmd_game_trivia(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not await check_permission(update, context): return
+    status = await update.effective_message.reply_text("🧠 <b>Finding a trivia question...</b>", parse_mode="HTML")
+    
+    difficulty = random.choice(["easy", "medium", "hard"])
+    prompt = f"Generate a unique {difficulty} trivia question. Random seed: {random.randint(1, 1000000)}. Return strictly in this format: QUESTION: [text] ANSWER: [one word answer]"
+    
+    try:
+        async with httpx.AsyncClient() as client:
+            res = await fetch_chatgpt(client, prompt)
+        
+        if "QUESTION:" in res and "ANSWER:" in res:
+            parts = res.split("ANSWER:")
+            question = parts[0].replace("QUESTION:", "").strip()
+            answer_part = parts[1].strip().lower()
+            # Clean punctuation
+            answer = "".join(ch for ch in answer_part if ch.isalnum() or ch.isspace()).split()[0]
+            
+            context.user_data["trivia_answer"] = answer
+            context.user_data[AWAIT_TRIVIA] = True
+            
+            kb = [[InlineKeyboardButton(" Give Up / Next", callback_data="btn_trivia")]]
+            text = (
+                f"🧠 <b>Trivia Challenge ({difficulty.title()})</b>\n\n"
+                f"<i>{question}</i>\n\n"
+                f"<b>Answer?</b> Send your guess below:"
+            )
+            await status.edit_text(text, parse_mode="HTML", reply_markup=InlineKeyboardMarkup(kb))
+        else:
+             await status.edit_text("❌ Failed to generate trivia. Please try again.")
+    except Exception as e:
+        logger.error(f"Trivia Gen Error: {e}")
+        await status.edit_text("⚙️ System error. Try again later.")
 
 async def cmd_shorten(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await check_permission(update, context, silent=True): return
@@ -1214,10 +1250,11 @@ AWAIT_RIDDLE = "await_riddle"
 AWAIT_HINATA = "await_hinata"
 AWAIT_FFVISIT = "await_ffvisit"
 AWAIT_IMAGINE = "await_imagine"
+AWAIT_TRIVIA = "await_trivia"
 
 def clear_states(ud):
     """Clears all pending prompt states to prevent tool conflicts."""
-    for key in [AWAIT_GEMINI, AWAIT_DEEPSEEK, AWAIT_FLIRT, AWAIT_INSTA, AWAIT_USERINFO, AWAIT_FF, AWAIT_FFGUILD, AWAIT_CODE, AWAIT_DL, AWAIT_QRGEN, AWAIT_BGREM, AWAIT_FFLIKE, AWAIT_TRANSLATE, AWAIT_SUMMARIZE, AWAIT_GRAMMAR, AWAIT_BAN, AWAIT_UNBAN, AWAIT_GUESS, AWAIT_RIDDLE, AWAIT_IMAGINE, AWAIT_HINATA, AWAIT_FFVISIT]:
+    for key in [AWAIT_GEMINI, AWAIT_DEEPSEEK, AWAIT_FLIRT, AWAIT_INSTA, AWAIT_USERINFO, AWAIT_FF, AWAIT_FFGUILD, AWAIT_CODE, AWAIT_DL, AWAIT_QRGEN, AWAIT_BGREM, AWAIT_FFLIKE, AWAIT_TRANSLATE, AWAIT_SUMMARIZE, AWAIT_GRAMMAR, AWAIT_BAN, AWAIT_UNBAN, AWAIT_GUESS, AWAIT_RIDDLE, AWAIT_IMAGINE, AWAIT_HINATA, AWAIT_FFVISIT, AWAIT_TRIVIA]:
         ud.pop(key, None)
 
 async def download_media(update: Update, context: ContextTypes.DEFAULT_TYPE, url: str):
@@ -2062,7 +2099,7 @@ async def do_tod_fetch(update: Update, _context: ContextTypes.DEFAULT_TYPE, mode
         [InlineKeyboardButton(" Roll Again", callback_data=f"tod_{mode}"),
          InlineKeyboardButton(" Back", callback_data="btn_back")]
     ]
-    await safe_edit(query, f" <b>{category.title()}:</b>\n\n{html.escape(reply)}", reply_markup=InlineKeyboardMarkup(kb))
+    await safe_edit(query, f" <b>{mode.title()}:</b>\n\n{html.escape(reply)}", reply_markup=InlineKeyboardMarkup(kb))
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
@@ -2152,6 +2189,15 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             else:
                 await msg.reply_text(f"❌ <b>Wrong!</b>\n\nThe correct answer was: <code>{ud.get('riddle_answer')}</code>", parse_mode="HTML", reply_markup=back_btn)
             ud.pop("riddle_answer", None)
+            return
+        elif ud.pop(AWAIT_TRIVIA, False):
+            secret = ud.get("trivia_answer", "").lower()
+            guess = txt.strip().lower()
+            if guess == secret or secret in guess: # Simple loose match
+                await msg.reply_text(f"🎉 <b>Correct!</b>\n\nAnswer: <code>{ud.get('trivia_answer')}</code>", parse_mode="HTML", reply_markup=back_btn)
+            else:
+                await msg.reply_text(f"❌ <b>Incorrect!</b>\n\nThe right answer was: <code>{ud.get('trivia_answer')}</code>", parse_mode="HTML", reply_markup=back_btn)
+            ud.pop("trivia_answer", None)
             return
         elif ud.pop(AWAIT_BGREM, False):
             if msg.photo: await do_bg_remove(update, context)
@@ -2545,6 +2591,7 @@ async def start_bot():
         BotCommand("ttt", "Tic Tac Toe"),
         BotCommand("tod", "Truth or Dare"),
         BotCommand("riddle", "Riddle Game"),
+        BotCommand("trivia", "Trivia Game"),
         BotCommand("guess", "Numbers Guessing"),
         BotCommand("rps", "Rock Paper Scissors"),
         BotCommand("coin", "Coin Flip"),
@@ -2615,6 +2662,7 @@ async def start_bot():
     app.add_handler(CommandHandler("shorten", cmd_shorten))
     app.add_handler(CommandHandler("guess", cmd_game_guess))
     app.add_handler(CommandHandler("riddle", cmd_game_riddle))
+    app.add_handler(CommandHandler("trivia", cmd_game_trivia))
     app.add_handler(CommandHandler("imagine", cmd_imagine))
     async def handle_ffguild_cmd(u, c):
         if not await check_permission(u, c): return
