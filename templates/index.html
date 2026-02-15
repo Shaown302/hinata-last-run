@@ -1,0 +1,439 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hinata Bot | Elite Command Center</title>
+    <link rel="stylesheet" href="/static/style.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <!-- Background Animation -->
+    <div class="background-blobs">
+      <div class="blob blob-1"></div>
+      <div class="blob blob-2"></div>
+      <div class="blob blob-3"></div>
+    </div>
+
+    <!-- Navbar -->
+    <nav class="glass-navbar">
+      <div class="nav-logo">
+        <i class="fa-solid fa-robot"></i>
+        <span>HINATA <span class="v-tag">v2.1</span></span>
+      </div>
+      <div class="nav-status">
+        <div class="status-dot online"></div>
+        <span>System Online</span>
+      </div>
+    </nav>
+
+    <div class="dashboard-container">
+      
+      <!-- Statistics Cards -->
+      <div class="stats-grid">
+        <div class="glass-card stat-card">
+          <i class="fa-solid fa-users"></i>
+          <div class="stat-info">
+            <h3>Total Users</h3>
+            <p id="stat-users">...</p>
+            <button class="btn btn-secondary btn-sm" onclick="trackUsers()" title="Update user info from Telegram">
+              <i class="fa-solid fa-sync"></i> Track All
+            </button>
+          </div>
+        </div>
+        <div class="glass-card stat-card">
+          <i class="fa-solid fa-layer-group"></i>
+          <div class="stat-info">
+            <h3>Total Groups</h3>
+            <p id="stat-groups">...</p>
+          </div>
+        </div>
+        <div class="glass-card stat-card">
+          <i class="fa-solid fa-server"></i>
+          <div class="stat-info">
+            <h3>Uptime</h3>
+            <p id="stat-uptime">00:00:00</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Controls -->
+      <div class="main-grid">
+        <!-- Broadcast Panel -->
+        <div class="glass-card">
+          <div class="card-header">
+            <h2><i class="fa-solid fa-bullhorn"></i> Global Broadcast</h2>
+          </div>
+          
+          <div class="control-groups">
+            <div class="control-group">
+              <label>Message Content</label>
+              <textarea id="broadcast-msg" placeholder="Type your announcement here... Support HTML formatting."></textarea>
+            </div>
+            
+            <div class="control-group">
+              <label>Target Audience</label>
+              <div class="btn-row">
+                <button class="btn btn-primary" onclick="sendBroadcast('all')">
+                  <i class="fa-solid fa-globe"></i> Everyone
+                </button>
+                <button class="btn btn-secondary" onclick="sendBroadcast('users')">
+                  <i class="fa-solid fa-user"></i> Users Only
+                </button>
+                <button class="btn btn-secondary" onclick="sendBroadcast('groups')">
+                  <i class="fa-solid fa-users-rectangle"></i> Groups Only
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Logs Panel -->
+        <div class="glass-card logs-panel">
+          <div class="card-header">
+            <h2><i class="fa-solid fa-terminal"></i> Live System Logs</h2>
+            <div class="pulse-icon"></div>
+          </div>
+          <div class="logs-content" id="logs-container">
+            <div class="log-entry system"><span class="log-timestamp">[SYSTEM]</span> Initializing Dashboard...</div>
+            <div class="log-entry info"><span class="log-timestamp">[INFO]</span> Connected to Bot API</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Broadcast History Section -->
+      <div class="glass-card" style="margin-bottom: 2.5rem;">
+        <div class="card-header">
+          <h2><i class="fa-solid fa-history"></i> Broadcast History</h2>
+        </div>
+        <div class="table-wrapper">
+          <table id="broadcasts-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Content Snippet</th>
+                <th>Target</th>
+                <th>Status</th>
+                <th>Time</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="broadcasts-body">
+              <tr><td colspan="6" class="loading">Loading history...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Command List Section -->
+      <div class="glass-card commands-section">
+        <div class="card-header">
+          <h2><i class="fa-solid fa-list-check"></i> Available Bot Commands</h2>
+        </div>
+        
+        <div class="commands-grid">
+          
+          <!-- AI Tools -->
+          <div class="command-category">
+            <h3><i class="fa-solid fa-brain"></i> AI Intelligence</h3>
+            <ul>
+              <li><code>/gemini [prompt]</code> <span class="command-desc">Ask Google Gemini AI</span></li>
+              <li><code>/hinata [query]</code> <span class="command-desc">Chat with DeepSeek (Uncensored)</span></li>
+              <li><code>/chatgpt [text]</code> <span class="command-desc">Chat with ChatGPT</span></li>
+              <li><code>/gen [prompt]</code> <span class="command-desc">Generate AI Images (Pollinations)</span></li>
+            </ul>
+          </div>
+
+          <!-- Free Fire Tools -->
+          <div class="command-category">
+            <h3><i class="fa-solid fa-fire"></i> Garena Free Fire</h3>
+            <ul>
+              <li><code>/ff [uid]</code> <span class="command-desc">Get Player Profile Info</span></li>
+              <li><code>/ffguild [id]</code> <span class="command-desc">Get Guild Information</span></li>
+              <li><code>/fflike [uid]</code> <span class="command-desc">Send Likes to Player</span></li>
+              <li><code>/ffvisit [uid]</code> <span class="command-desc">Visit Player Profile</span></li>
+            </ul>
+          </div>
+
+          <!-- Utilities -->
+          <div class="command-category">
+            <h3><i class="fa-solid fa-screwdriver-wrench"></i> Utilities</h3>
+            <ul>
+              <li><code>/dl [url]</code> <span class="command-desc">Download Media (YT, Insta, X, Pinterest)</span></li>
+              <li><code>/tempmail</code> <span class="command-desc">Generate Temporary Email</span></li>
+              <li><code>/insta [user]</code> <span class="command-desc">Get Instagram Profile Info</span></li>
+              <li><code>/tr [lang] [text]</code> <span class="command-desc">Translate Text</span></li>
+              <li><code>/id</code> <span class="command-desc">Get User/Chat ID</span></li>
+              <li><code>/info</code> <span class="command-desc">Get User Info</span></li>
+            </ul>
+          </div>
+
+          <!-- Fun & Games -->
+          <div class="command-category">
+            <h3><i class="fa-solid fa-gamepad"></i> Fun & Games</h3>
+            <ul>
+              <li><code>/roast</code> <span class="command-desc">Roast a user</span></li>
+              <li><code>/flirt</code> <span class="command-desc">Get a pickup line</span></li>
+              <li><code>/joke</code> <span class="command-desc">Tell a random joke</span></li>
+              <li><code>/quote</code> <span class="command-desc">Get an inspiring quote</span></li>
+              <li><code>/coin</code> <span class="command-desc">Flip a coin</span></li>
+              <li><code>/rps</code> <span class="command-desc">Play Rock-Paper-Scissors</span></li>
+              <li><code>/truth</code> <span class="command-desc">Get a Truth question</span></li>
+              <li><code>/dare</code> <span class="command-desc">Get a Dare challenge</span></li>
+            </ul>
+          </div>
+
+          <!-- Owner Only -->
+          <div class="command-category owner-only">
+            <h3><i class="fa-solid fa-crown"></i> Administration</h3>
+            <ul>
+              <li><code>/broadcast [msg]</code> <span class="command-desc">Broadcast message to all</span></li>
+              <li><code>/broadcast_media</code> <span class="command-desc">Broadcast replied media</span></li>
+              <li><code>/term [cmd]</code> <span class="command-desc">Run terminal command</span></li>
+              <li><code>/eval [code]</code> <span class="command-desc">Execute Python code</span></li>
+            </ul>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Data Tables -->
+       <div class="data-grid">
+        <!-- Users Table -->
+        <div class="glass-card">
+          <div class="card-header">
+            <h2><i class="fa-solid fa-users-viewfinder"></i> Recent Users</h2>
+          </div>
+          <div class="table-wrapper">
+             <table id="users-table">
+               <thead>
+                 <tr>
+                   <th>ID</th>
+                   <th>Name</th>
+                   <th>Username</th>
+                   <th>Joined</th>
+                 </tr>
+               </thead>
+               <tbody id="users-body">
+                 <tr><td colspan="4" class="loading">Loading data...</td></tr>
+               </tbody>
+             </table>
+          </div>
+        </div>
+
+        <!-- Groups Table -->
+        <div class="glass-card">
+          <div class="card-header">
+             <h2><i class="fa-solid fa-network-wired"></i> Recent Groups</h2>
+          </div>
+           <div class="table-wrapper">
+             <table id="groups-table">
+               <thead>
+                 <tr>
+                   <th>ID</th>
+                   <th>Title</th>
+                   <th>Type</th>
+                   <th>Added</th>
+                 </tr>
+               </thead>
+               <tbody id="groups-body">
+                  <tr><td colspan="4" class="loading">Loading data...</td></tr>
+               </tbody>
+             </table>
+          </div>
+        </div>
+      </div>
+
+      <footer>
+        <p>&copy; 2026 Hinata Bot System. All rights reserved.</p>
+      </footer>
+
+    </div>
+
+    <script>
+      async function fetchData() {
+        try {
+          const res = await fetch("/api/data");
+          const data = await res.json();
+          
+          document.getElementById("stat-users").innerText = data.stats.total_users;
+          document.getElementById("stat-groups").innerText = data.stats.total_groups;
+          document.getElementById("stat-uptime").innerText = data.stats.uptime;
+          
+          renderUsers(data.users);
+          renderGroups(data.groups);
+          renderBroadcasts(data.broadcasts);
+
+        } catch (e) {
+          console.error("Fetch Error:", e);
+          logToConsole("Error fetching data from server", "error");
+        }
+      }
+
+      function renderUsers(users) {
+        const uBody = document.getElementById("users-body");
+        if (!users || users.length === 0) {
+          uBody.innerHTML = "<tr><td colspan='4' class='empty'>No users found</td></tr>";
+        } else {
+           uBody.innerHTML = users.slice(0, 50).map(u => `
+             <tr>
+               <td><code>${u.id}</code></td>
+               <td>${u.full_name || u.name || 'Unknown'}</td>
+               <td>${u.username ? '@'+u.username : 'N/A'}</td>
+               <td>${u.joined_at || 'N/A'}</td>
+             </tr>
+           `).join("");
+        }
+      }
+
+      function renderGroups(groups) {
+        const gBody = document.getElementById("groups-body");
+        if (!groups || groups.length === 0) {
+          gBody.innerHTML = "<tr><td colspan='4' class='empty'>No groups found</td></tr>";
+        } else {
+           gBody.innerHTML = groups.slice(0, 50).map(g => `
+             <tr>
+               <td><code>${g.id}</code></td>
+               <td>${g.title || 'Unknown'}</td>
+               <td><span class="badge type">${g.type || 'group'}</span></td>
+               <td>${g.added_at || 'N/A'}</td>
+             </tr>
+           `).join("");
+        }
+      }
+
+      function renderBroadcasts(broadcasts) {
+        const bBody = document.getElementById("broadcasts-body");
+        if (!broadcasts || broadcasts.length === 0) {
+          bBody.innerHTML = "<tr><td colspan='6' class='empty'>No broadcast history</td></tr>";
+        } else {
+          bBody.innerHTML = broadcasts.map(b => `
+            <tr>
+              <td><code>#${b.id}</code></td>
+              <td><span title="${b.text}">${b.text.substring(0, 30)}${b.text.length > 30 ? '...' : ''}</span></td>
+              <td><span class="badge">${b.target}</span></td>
+              <td><span class="text-success">${b.sent_count} ✅</span> / <span class="text-danger">${b.failed_count} ❌</span></td>
+              <td>${b.timestamp}</td>
+              <td>
+                <button class="btn btn-danger btn-sm" onclick="deleteBroadcast(${b.id})">
+                  <i class="fa-solid fa-trash"></i> Delete
+                </button>
+              </td>
+            </tr>
+          `).join("");
+        }
+      }
+
+      async function trackUsers() {
+        if(!confirm("Track all users? This will update metadata without notifications.")) return;
+        logToConsole("Starting user tracking sequence...", "info");
+        try {
+          const res = await fetch("/api/control", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "track_users" }),
+          });
+          alert("Tracking started in background. Check logs for progress.");
+        } catch (e) {
+          logToConsole("Error starting tracking", "error");
+        }
+      }
+
+      async function deleteBroadcast(id) {
+        if(!confirm(`Delete broadcast #${id} from Telegram and History?`)) return;
+        logToConsole(`Deleting broadcast #${id}...`, "info");
+        try {
+          const res = await fetch(`/api/broadcasts/${id}`, { method: "DELETE" });
+          const result = await res.json();
+          if(result.success) {
+            logToConsole(`Broadcast #${id} deleted. (Deleted: ${result.deleted}, Failed: ${result.failed})`, "success");
+            fetchData();
+          } else {
+            alert("Error deleting broadcast: " + result.error);
+          }
+        } catch (e) {
+          logToConsole("Network error during deletion", "error");
+        }
+      }
+
+      async function sendBroadcast(target) {
+        const msg = document.getElementById("broadcast-msg").value;
+        if (!msg) {
+          alert("Please enter a message!");
+          return;
+        }
+
+        logToConsole(`Initiating broadcast to ${target}...`, "info");
+        
+        try {
+          const res = await fetch("/api/broadcast", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ message: msg, target: target }),
+          });
+          const result = await res.json();
+          
+          if(result.status === "success") {
+             logToConsole(`Broadcast Complete: Sent to ${result.sent} (Failed: ${result.failed})`, "info");
+             alert(`Broadcast Sent!\nSuccess: ${result.sent}\nFailed: ${result.failed}`);
+             document.getElementById("broadcast-msg").value = "";
+             fetchData();
+          } else {
+             logToConsole(`Broadcast Failed: ${result.detail}`, "error");
+             alert("Error sending broadcast.");
+          }
+        } catch (e) {
+          logToConsole(`Network Error: ${e}`, "error");
+        }
+      }
+
+      async function fetchLogs() {
+        try {
+          const res = await fetch("/api/logs");
+          const logs = await res.json();
+          const container = document.getElementById("logs-container");
+          
+          // Only update if logs changed (simple check)
+          const newContent = logs.map(log => {
+            let type = 'info';
+            if (log.toLowerCase().includes('error')) type = 'error';
+            if (log.toLowerCase().includes('warn')) type = 'warn';
+            if (log.toLowerCase().includes('system') || log.toLowerCase().includes('tracker')) type = 'system';
+            return `<div class="log-entry ${type}">${log}</div>`;
+          }).join("");
+          
+          if(container.innerHTML !== newContent) {
+            container.innerHTML = newContent;
+            container.scrollTop = container.scrollHeight;
+          }
+        } catch (e) {}
+      }
+
+      function logToConsole(text, type="info") {
+        const container = document.getElementById("logs-container");
+        const entry = document.createElement("div");
+        entry.className = `log-entry ${type}`;
+        
+        const time = new Date().toLocaleTimeString();
+        entry.innerHTML = `<span class="log-timestamp">[${time}]</span> ${text}`;
+        
+        container.insertBefore(entry, container.firstChild);
+      }
+      
+      // Auto Load
+      document.addEventListener("DOMContentLoaded", () => {
+        fetchData();
+        fetchLogs();
+        setInterval(fetchData, 15000);
+        setInterval(fetchLogs, 3000);
+      });
+    </script>
+  </body>
+</html>
